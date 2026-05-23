@@ -1,4 +1,4 @@
-# TorLite Browser 🧅
+# <img src="logo.png" width="38" height="38" valign="middle" /> TorLite Browser
 
 [English Version](#english-version) | [Versión en Español](#versión-en-español)
 
@@ -8,9 +8,6 @@
 
 An experimental, lightweight, tabbed web browser built using **Tauri v2** and **Rust**, designed to route web traffic securely through the **Tor network** with a focus on amnesic privacy and multi-profile tab isolation.
 
-<p align="center">
-  <img src="logo.png" width="128" height="128" alt="TorLite Browser Logo" />
-</p>
 
 ### Screenshots
 
@@ -93,9 +90,6 @@ This project is open-source and is licensed under the same dual-licensing scheme
 
 Un navegador web con pestañas, ligero y experimental construido usando **Tauri v2** y **Rust**, diseñado para enrutar el tráfico web de forma segura a través de la **red Tor** con un enfoque en la privacidad amnésica y el aislamiento de pestañas multi-perfil.
 
-<p align="center">
-  <img src="logo.png" width="128" height="128" alt="Logotipo de TorLite Browser" />
-</p>
 
 ### Capturas de Pantalla
 
