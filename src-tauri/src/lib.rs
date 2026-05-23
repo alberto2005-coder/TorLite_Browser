@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::sync::Mutex;
+use std::collections::HashMap;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tauri::{AppHandle, Manager, WebviewUrl, LogicalPosition, LogicalSize, Emitter};
@@ -11,6 +12,8 @@ use tor_rtcompat::PreferredRuntime;
 
 struct AppState {
     tor_status: Mutex<String>,
+    window_counter: std::sync::atomic::AtomicU32,
+    active_visors: Mutex<HashMap<String, String>>,
 }
 
 // SOCKS5 connection handler
@@ -77,6 +80,11 @@ async fn handle_client(
 
     let port = client.read_u16().await?;
 
+    if target_host == "newwindow.local" {
+        let _ = client.write_all(&[0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0]).await;
+        return Ok(());
+    }
+
     // Connect via TorClient
     println!("SOCKS5 Proxy connecting to {}:{} via Tor...", target_host, port);
     match tor_client.connect((target_host.as_str(), port)).await {
@@ -95,6 +103,30 @@ async fn handle_client(
         }
     }
 
+    Ok(())
+}
+
+fn spawn_browser_window(
+    app: &AppHandle,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // 1. Get next window ID
+    let state = app.state::<AppState>();
+    let id = state.window_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
+    let window_label = format!("browser_{}", id);
+
+    println!("Spawning browser window: {}", window_label);
+
+    // 2. Create the window hosting the HTML UI (index.html)
+    let _browser_window = tauri::webview::WebviewWindowBuilder::new(
+        app,
+        &window_label,
+        tauri::WebviewUrl::App("index.html".into()),
+    )
+    .title("TorLite Browser")
+    .inner_size(800.0, 600.0)
+    .build()?;
+
+    println!("Spawned browser window {} successfully!", window_label);
     Ok(())
 }
 
@@ -152,14 +184,18 @@ async fn start_tor_and_proxy(
     *app.state::<AppState>().tor_status.lock().unwrap() = "connected".to_string();
     let _ = app.emit("tor-status", "connected");
 
-    // Once connected, navigate the child webview (visor) to the default homepage
-    if let Some(webview) = app.get_webview("visor") {
-        let homepage = "http://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/";
-        if let Ok(url) = homepage.parse::<tauri::Url>() {
-            println!("Navigating visor webview to default homepage: {}", homepage);
-            let _ = webview.navigate(url);
+    // Once connected, close the splash window and open the first browser window!
+    let app_clone = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = spawn_browser_window(&app_clone) {
+            eprintln!("Error spawning first browser window: {:?}", e);
+        } else {
+            // Close the bootstrap/splash window (labeled "main") only after the new window is successfully open
+            if let Some(main_window) = app_clone.get_webview_window("main") {
+                let _ = main_window.close();
+            }
         }
-    }
+    });
 
     println!("Starting SOCKS5 proxy event loop...");
     loop {
@@ -183,13 +219,163 @@ async fn start_tor_and_proxy(
 
 // Commands
 #[tauri::command]
+fn log_console(message: String) {
+    println!("JS Console: {}", message);
+}
+
+#[tauri::command]
 fn get_tor_status(state: tauri::State<'_, AppState>) -> String {
     state.tor_status.lock().unwrap().clone()
 }
 
 #[tauri::command]
-fn navigate_to(app: tauri::AppHandle, url: String) -> Result<(), String> {
-    if let Some(webview) = app.get_webview("visor") {
+async fn create_tab(
+    window: tauri::Window,
+    url: String,
+    app: tauri::AppHandle,
+) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    let id = state.window_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
+    let visor_label = format!("visor_{}", id);
+
+    println!("create_tab: creating visor webview: {} with initial url: {}", visor_label, url);
+
+    let proxy_url = tauri::Url::parse("socks5://127.0.0.1:9150").unwrap();
+
+    let init_script = r#"
+        document.addEventListener('click', function(e) {
+            var target = e.target.closest('a');
+            if (target && target.getAttribute('target') === '_blank') {
+                e.preventDefault();
+                var url = target.href;
+                window.location.href = "http://newwindow.local/?url=" + encodeURIComponent(url);
+            }
+        }, true);
+        window.open = function(url) {
+            if (url) {
+                window.location.href = "http://newwindow.local/?url=" + encodeURIComponent(url);
+            }
+            return window;
+        };
+    "#;
+
+    let window_clone2 = window.clone();
+    let mut webview_builder = WebviewBuilder::new(
+        &visor_label,
+        WebviewUrl::External(url.parse().map_err(|e: url::ParseError| e.to_string())?)
+    )
+    .auto_resize()
+    .proxy_url(proxy_url)
+    .initialization_script(init_script)
+    .on_new_window(move |url, _features| {
+        println!("Intercepted native new window request for URL: {}", url);
+        let _ = window_clone2.emit("open-new-tab", url);
+        tauri::webview::NewWindowResponse::Deny
+    });
+
+    #[cfg(target_os = "windows")]
+    {
+        let mut visor_data_dir = app.path().app_data_dir().unwrap_or_else(|_| std::env::temp_dir());
+        visor_data_dir.push(format!("visor_profile_{}", id));
+        println!("Setup visor data directory for tab: {:?}", visor_data_dir);
+        std::fs::create_dir_all(&visor_data_dir).ok();
+        webview_builder = webview_builder
+            .data_directory(visor_data_dir)
+            .additional_browser_args("--proxy-server=\"socks5://127.0.0.1:9150\" --host-resolver-rules=\"MAP * ~NOTFOUND , EXCLUDE 127.0.0.1\"");
+    }
+
+    let visor_label_clone = visor_label.clone();
+    let window_clone = window.clone();
+    let webview_builder = webview_builder.on_navigation(move |url| {
+        let url_str = url.as_str();
+        println!("Visor {} navigating to: {}", visor_label_clone, url_str);
+
+        if url_str.starts_with("http://newwindow.local/") {
+            if let Some(query) = url.query() {
+                let params: Vec<(String, String)> = url::form_urlencoded::parse(query.as_bytes())
+                    .into_owned()
+                    .collect();
+                if let Some((_, target_url)) = params.iter().find(|(k, _)| k == "url") {
+                    println!("Intercepted new tab navigation to: {}", target_url);
+                    let _ = window_clone.emit("open-new-tab", target_url.clone());
+                }
+            }
+            return false;
+        }
+
+        let event_name = format!("url-changed-{}", visor_label_clone);
+        let _ = window_clone.emit(&event_name, url_str);
+        true
+    });
+
+    let scale_factor = window.scale_factor().unwrap_or(1.0);
+    let size = window.inner_size().unwrap_or(tauri::PhysicalSize::new(800, 600));
+    let logical_size = size.to_logical::<f64>(scale_factor);
+
+    window.add_child(
+        webview_builder,
+        LogicalPosition::new(0.0, 110.0),
+        LogicalSize::new(logical_size.width, logical_size.height - 110.0)
+    ).map_err(|e| e.to_string())?;
+
+    Ok(visor_label)
+}
+
+#[tauri::command]
+async fn activate_tab(
+    window: tauri::Window,
+    active_label: String,
+    inactive_labels: Vec<String>,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    let window_label = window.label().to_string();
+    state.active_visors.lock().unwrap().insert(window_label, active_label.clone());
+
+    let scale_factor = window.scale_factor().unwrap_or(1.0);
+    let size = window.inner_size().unwrap_or(tauri::PhysicalSize::new(800, 600));
+    let logical_size = size.to_logical::<f64>(scale_factor);
+
+    if let Some(active_webview) = window.get_webview(&active_label) {
+        let _ = active_webview.set_position(tauri::LogicalPosition::new(0.0, 110.0));
+        let _ = active_webview.set_size(tauri::LogicalSize::new(logical_size.width, logical_size.height - 110.0));
+    }
+
+    for inactive_label in inactive_labels {
+        if let Some(inactive_webview) = window.get_webview(&inactive_label) {
+            let _ = inactive_webview.set_position(tauri::LogicalPosition::new(0.0, 0.0));
+            let _ = inactive_webview.set_size(tauri::LogicalSize::new(0.0, 0.0));
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn close_tab(window: tauri::Window, label: String, app: tauri::AppHandle) -> Result<(), String> {
+    println!("close_tab: closing visor webview: {}", label);
+    if let Some(webview) = window.get_webview(&label) {
+        webview.close().map_err(|e| e.to_string())?;
+    }
+
+    // Attempt to delete profile folder after 1 second delay
+    let id_str = label["visor_".len()..].to_string();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        if let Ok(mut visor_data_dir) = app.path().app_data_dir() {
+            visor_data_dir.push(format!("visor_profile_{}", id_str));
+            if visor_data_dir.exists() {
+                println!("Deleting closed tab profile: {:?}", visor_data_dir);
+                let _ = std::fs::remove_dir_all(&visor_data_dir);
+            }
+        }
+    });
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn navigate_to(window: tauri::Window, label: String, url: String) -> Result<(), String> {
+    if let Some(webview) = window.get_webview(&label) {
         let parsed_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
         webview.navigate(parsed_url).map_err(|e| e.to_string())?;
     }
@@ -197,24 +383,24 @@ fn navigate_to(app: tauri::AppHandle, url: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn go_back(app: tauri::AppHandle) -> Result<(), String> {
-    if let Some(webview) = app.get_webview("visor") {
+async fn go_back(window: tauri::Window, label: String) -> Result<(), String> {
+    if let Some(webview) = window.get_webview(&label) {
         webview.eval("window.history.back()").map_err(|e| e.to_string())?;
     }
     Ok(())
 }
 
 #[tauri::command]
-fn go_forward(app: tauri::AppHandle) -> Result<(), String> {
-    if let Some(webview) = app.get_webview("visor") {
+async fn go_forward(window: tauri::Window, label: String) -> Result<(), String> {
+    if let Some(webview) = window.get_webview(&label) {
         webview.eval("window.history.forward()").map_err(|e| e.to_string())?;
     }
     Ok(())
 }
 
 #[tauri::command]
-fn reload_page(app: tauri::AppHandle) -> Result<(), String> {
-    if let Some(webview) = app.get_webview("visor") {
+async fn reload_page(window: tauri::Window, label: String) -> Result<(), String> {
+    if let Some(webview) = window.get_webview(&label) {
         webview.eval("window.location.reload()").map_err(|e| e.to_string())?;
     }
     Ok(())
@@ -226,58 +412,64 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(AppState {
             tor_status: Mutex::new("connecting".to_string()),
+            window_counter: std::sync::atomic::AtomicU32::new(0),
+            active_visors: Mutex::new(HashMap::new()),
         })
         .invoke_handler(tauri::generate_handler![
+            log_console,
             get_tor_status,
+            create_tab,
+            activate_tab,
+            close_tab,
             navigate_to,
             go_back,
             go_forward,
             reload_page
         ])
         .setup(|app| {
+            println!("Setup: cleaning up old profile directories...");
+            if let Ok(app_data_dir) = app.path().app_data_dir() {
+                if app_data_dir.exists() {
+                    if let Ok(entries) = std::fs::read_dir(&app_data_dir) {
+                        for entry in entries {
+                            if let Ok(entry) = entry {
+                                let path = entry.path();
+                                if path.is_dir() {
+                                    if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                                        if name.starts_with("visor_profile_") {
+                                            println!("Cleaning up old profile: {:?}", path);
+                                            let _ = std::fs::remove_dir_all(&path);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            println!("Setup: starting Tor and proxy backend task...");
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = start_tor_and_proxy(app_handle).await {
                     eprintln!("CRITICAL ERROR in start_tor_and_proxy: {:?}", e);
                 }
             });
-
-            // Get the main window
-            let main_window = app.get_webview_window("main").ok_or("Failed to get main window")?;
-            let _ = main_window.set_title("Antigravity Onion Browser");
-
-            // Setup child Webview
-            let proxy_url = tauri::Url::parse("socks5://127.0.0.1:9150").unwrap();
-            let webview_builder = WebviewBuilder::new(
-                "visor",
-                WebviewUrl::External("about:blank".parse().unwrap())
-            )
-            .auto_resize()
-            .proxy_url(proxy_url);
-
-            let app_handle_clone = app.handle().clone();
-            let webview_builder = webview_builder.on_navigation(move |url| {
-                let _ = app_handle_clone.emit("url-changed", url.as_str());
-                true
-            });
-
-            // Add the child to the main window
-            main_window.as_ref().window().add_child(
-                webview_builder,
-                LogicalPosition::new(0.0, 70.0),
-                LogicalSize::new(800.0, 530.0)
-            )?;
-
             Ok(())
         })
         .on_window_event(|window, event| {
-            if window.label() == "main" {
+            let label = window.label();
+            if label.starts_with("browser_") {
                 if let tauri::WindowEvent::Resized(size) = event {
-                    if let Some(child_webview) = window.get_webview("visor") {
-                        let scale_factor = window.scale_factor().unwrap_or(1.0);
-                        let logical_size = size.to_logical::<f64>(scale_factor);
-                        let _ = child_webview.set_position(tauri::LogicalPosition::new(0.0, 70.0));
-                        let _ = child_webview.set_size(tauri::LogicalSize::new(logical_size.width, logical_size.height - 70.0));
+                    let state = window.state::<AppState>();
+                    let active_visors = state.active_visors.lock().unwrap();
+                    if let Some(active_label) = active_visors.get(label) {
+                        if let Some(child_webview) = window.get_webview(active_label) {
+                            let scale_factor = window.scale_factor().unwrap_or(1.0);
+                            let logical_size = size.to_logical::<f64>(scale_factor);
+                            let _ = child_webview.set_position(tauri::LogicalPosition::new(0.0, 110.0));
+                            let _ = child_webview.set_size(tauri::LogicalSize::new(logical_size.width, logical_size.height - 110.0));
+                        }
                     }
                 }
             }
