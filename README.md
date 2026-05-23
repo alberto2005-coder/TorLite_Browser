@@ -8,14 +8,19 @@
 
 An experimental, lightweight, tabbed web browser built using **Tauri v2** and **Rust**, designed to route web traffic securely through the **Tor network** with a focus on amnesic privacy and multi-profile tab isolation.
 
+<p align="center">
+  <img src="logo.png" width="128" height="128" alt="TorLite Browser Logo" />
+</p>
+
 ## Table of Contents
 1. [Features](#features)
-2. [Prerequisites](#prerequisites)
-3. [Installation & Setup](#installation--setup)
-4. [Building for Production (Distribution)](#building-for-production-distribution)
-5. [Architectural Layout](#architectural-layout)
-6. [Credits, Licenses & Copyrights](#credits-licenses--copyrights)
-7. [License](#license)
+2. [Preview](#preview)
+3. [Prerequisites](#prerequisites)
+4. [Installation & Setup](#installation--setup)
+5. [Building for Production (Distribution)](#building-for-production-distribution)
+6. [Architectural Layout](#architectural-layout)
+7. [Credits, Licenses & Copyrights](#credits-licenses--copyrights)
+8. [License](#license)
 
 ### Features
 - **Tor Integration**: Uses the official Tor Project's **Arti** client to bootstrap and connect directly to the Tor network.
@@ -27,6 +32,9 @@ An experimental, lightweight, tabbed web browser built using **Tauri v2** and **
   - Automatically purges all stale profile directories on application startup, leaving no persistent browsing history, cache, or cookies.
 - **Native Context Interception**: Intercepts native WebView2 new window requests (e.g., right-clicking a link and choosing "Open in new window" or target `_blank` clicks) and opens them as a new tab instead of a separate OS window.
 - **Onion Status Indicator**: Glowing indicator that turns purple when visiting `.onion` hidden services and displays the real-time Tor bootstrap status.
+
+### Preview
+![TorLite Browser Interface](screenshot.png)
 
 ### Prerequisites
 To build and run this project, make sure you have the following installed:
@@ -79,14 +87,19 @@ This project is open-source and is licensed under the same dual-licensing scheme
 
 Un navegador web con pestañas, ligero y experimental construido usando **Tauri v2** y **Rust**, diseñado para enrutar el tráfico web de forma segura a través de la **red Tor** con un enfoque en la privacidad amnésica y el aislamiento de pestañas multi-perfil.
 
+<p align="center">
+  <img src="logo.png" width="128" height="128" alt="Logotipo de TorLite Browser" />
+</p>
+
 ## Índice
 1. [Características](#características)
-2. [Requisitos Previos](#requisitos-previos)
-3. [Instalación y Configuración](#instalación-y-configuración)
-4. [Compilación para Producción (Distribución)](#compilación-para-producción-distribución)
-5. [Estructura del Proyecto](#estructura-del-proyecto)
-6. [Créditos, Licencias y Derechos de Autor](#créditos-licencias-y-derechos-de-autor)
-7. [Licencia](#licencia-1)
+2. [Vista Previa](#vista-previa)
+3. [Requisitos Previos](#requisitos-previos)
+4. [Instalación y Configuración](#instalación-y-configuración)
+5. [Compilación para Producción (Distribución)](#compilación-para-producción-distribución)
+6. [Estructura del Proyecto](#estructura-del-proyecto)
+7. [Créditos, Licencias y Derechos de Autor](#créditos-licencias-y-derechos-de-autor)
+8. [Licencia](#licencia-1)
 
 ### Características
 - **Integración con Tor**: Utiliza el cliente oficial **Arti** de The Tor Project para inicializar y conectarse directamente a la red Tor.
@@ -98,6 +111,9 @@ Un navegador web con pestañas, ligero y experimental construido usando **Tauri 
   - Purga de forma automática todos los perfiles de pestañas antiguos al arrancar la aplicación, garantizando que no persistan historiales de navegación, caché o cookies entre sesiones.
 - **Intercepción de Ventanas Nativas**: Captura las solicitudes de apertura de nuevas ventanas de WebView2 (como al pulsar "Abrir vínculo en una nueva ventana" en el menú contextual o enlaces con `target="_blank"`) y las abre como nuevas pestañas en la misma ventana.
 - **Indicador de Estado Onion**: Distintivo brillante que se ilumina de color morado al visitar servicios ocultos `.onion` y muestra el progreso de conexión de Tor en tiempo real.
+
+### Vista Previa
+![Interfaz de TorLite Browser](screenshot.png)
 
 ### Requisitos Previos
 Para compilar y ejecutar este proyecto, asegúrate de tener instalado:
