@@ -12,9 +12,16 @@ An experimental, lightweight, tabbed web browser built using **Tauri v2** and **
   <img src="logo.png" width="128" height="128" alt="TorLite Browser Logo" />
 </p>
 
+### Screenshots
+<p align="center">
+  <img src="docs/bootstrap_splash.png" width="320" alt="Bootstrap Splash Screen" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="docs/browser_interface.png" width="540" alt="Browser Interface" />
+</p>
+
 ## Table of Contents
 1. [Features](#features)
-2. [Preview](#preview)
+2. [Screenshots](#screenshots)
 3. [Prerequisites](#prerequisites)
 4. [Installation & Setup](#installation--setup)
 5. [Building for Production (Distribution)](#building-for-production-distribution)
@@ -33,8 +40,7 @@ An experimental, lightweight, tabbed web browser built using **Tauri v2** and **
 - **Native Context Interception**: Intercepts native WebView2 new window requests (e.g., right-clicking a link and choosing "Open in new window" or target `_blank` clicks) and opens them as a new tab instead of a separate OS window.
 - **Onion Status Indicator**: Glowing indicator that turns purple when visiting `.onion` hidden services and displays the real-time Tor bootstrap status.
 
-### Preview
-![TorLite Browser Interface](screenshot.png)
+
 
 ### Prerequisites
 To build and run this project, make sure you have the following installed:
@@ -91,9 +97,16 @@ Un navegador web con pestañas, ligero y experimental construido usando **Tauri 
   <img src="logo.png" width="128" height="128" alt="Logotipo de TorLite Browser" />
 </p>
 
+### Capturas de Pantalla
+<p align="center">
+  <img src="docs/bootstrap_splash.png" width="320" alt="Pantalla de Carga" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="docs/browser_interface.png" width="540" alt="Interfaz del Navegador" />
+</p>
+
 ## Índice
 1. [Características](#características)
-2. [Vista Previa](#vista-previa)
+2. [Capturas de Pantalla](#capturas-de-pantalla)
 3. [Requisitos Previos](#requisitos-previos)
 4. [Instalación y Configuración](#instalación-y-configuración)
 5. [Compilación para Producción (Distribución)](#compilación-para-producción-distribución)
@@ -112,8 +125,7 @@ Un navegador web con pestañas, ligero y experimental construido usando **Tauri 
 - **Intercepción de Ventanas Nativas**: Captura las solicitudes de apertura de nuevas ventanas de WebView2 (como al pulsar "Abrir vínculo en una nueva ventana" en el menú contextual o enlaces con `target="_blank"`) y las abre como nuevas pestañas en la misma ventana.
 - **Indicador de Estado Onion**: Distintivo brillante que se ilumina de color morado al visitar servicios ocultos `.onion` y muestra el progreso de conexión de Tor en tiempo real.
 
-### Vista Previa
-![Interfaz de TorLite Browser](screenshot.png)
+
 
 ### Requisitos Previos
 Para compilar y ejecutar este proyecto, asegúrate de tener instalado:
