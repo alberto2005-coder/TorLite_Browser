@@ -11,9 +11,9 @@ An experimental, lightweight, tabbed web browser built using **Tauri v2** and **
 
 ### Screenshots
 
-| Tor Connection Splash | Browser Interface |
+| Browser Interface | Tor Connection Splash |
 | :---: | :---: |
-| <img src="docs/bootstrap_splash.png" width="300" alt="Bootstrap Splash Screen" /> | <img src="docs/browser_interface.png" width="500" alt="Browser Interface" /> |
+| <img src="docs/bootstrap_splash.png" width="400px" alt="Browser Interface" /> | <img src="docs/browser_interface.png" width="400px" alt="Tor Connection Splashe" /> |
 
 
 ## Table of Contents
@@ -93,9 +93,9 @@ Un navegador web con pestañas, ligero y experimental construido usando **Tauri 
 
 ### Capturas de Pantalla
 
-| Pantalla de Carga de Tor | Interfaz del Navegador |
+| Interfaz del Navegador | Pantalla de Carga de Tor |
 | :---: | :---: |
-| <img src="docs/bootstrap_splash.png" width="300" alt="Pantalla de Carga" /> | <img src="docs/browser_interface.png" width="500" alt="Interfaz del Navegador" /> |
+| <img src="docs/bootstrap_splash.png" width="400px" alt="Interfaz del Navegador" /> | <img src="docs/browser_interface.png" width="400x" alt="Pantalla de Carga de Tor" /> |
 
 
 ## Índice
