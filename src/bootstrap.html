@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TorLite Browser - Connecting</title>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0d081f, #150930);
+      --glass-bg: rgba(25, 14, 52, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --accent-color: #24c8db;
+      --onion-green: #39FF14;
+      --warning-orange: #FFAC1C;
+      --error-red: #FF3131;
+      --text-primary: #ffffff;
+      --text-secondary: #b3a7d4;
+      font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-gradient);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 24px;
+      padding: 30px;
+    }
+
+    .onion-logo {
+      font-size: 64px;
+      filter: drop-shadow(0 0 10px rgba(163, 73, 164, 0.5));
+      animation: pulse-onion 2s infinite alternate;
+    }
+
+    @keyframes pulse-onion {
+      from {
+        transform: scale(0.95);
+        filter: drop-shadow(0 0 10px rgba(163, 73, 164, 0.4));
+      }
+
+      to {
+        transform: scale(1.05);
+        filter: drop-shadow(0 0 25px rgba(163, 73, 164, 0.8));
+      }
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin: 0;
+      background: linear-gradient(120deg, #ffffff, #b3a7d4);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .status-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin: 0;
+      min-height: 20px;
+    }
+
+    .progress-bar-container {
+      width: 250px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--accent-color), #a349a4);
+      border-radius: 2px;
+      position: absolute;
+      left: -100%;
+      animation: loading 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes loading {
+      from {
+        left: -100%;
+      }
+
+      to {
+        left: 100%;
+      }
+    }
+
+    .error-message {
+      display: none;
+      color: var(--error-red);
+      font-size: 12px;
+      margin-top: 10px;
+      max-width: 320px;
+      word-break: break-word;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="onion-logo">🧅</div>
+    <h1 class="title">TorLite Browser</h1>
+    <div class="progress-bar-container" id="loader">
+      <div class="progress-bar"></div>
+    </div>
+    <p class="status-text" id="status">Establishing secure Tor connection...</p>
+    <div class="error-message" id="error-box"></div>
+  </div>
+
+  <script>
+    const statusText = document.getElementById("status");
+    const errorBox = document.getElementById("error-box");
+    const loader = document.getElementById("loader");
+
+    // Listen for the tor-status event from the backend
+    if (window.__TAURI__) {
+      const { listen } = window.__TAURI__.event;
+      const { invoke } = window.__TAURI__.core;
+
+      // Get initial status
+      invoke("get_tor_status")
+        .then((status) => {
+          updateStatus(status);
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+
+      listen("tor-status", (event) => {
+        updateStatus(event.payload);
+      }).catch((err) => {
+        console.error("Failed to listen to tor-status:", err);
+      });
+    }
+
+    function updateStatus(status) {
+      if (status === "connecting") {
+        statusText.textContent = "Bootstrapping Tor network...";
+      } else if (status === "connected") {
+        statusText.textContent = "Tor Connected! Opening browser...";
+        statusText.style.color = "var(--onion-green)";
+      } else if (status === "error") {
+        statusText.textContent = "Failed to connect to Tor.";
+        statusText.style.color = "var(--error-red)";
+        loader.style.display = "none";
+        errorBox.style.display = "block";
+        errorBox.textContent = "Check your internet connection or firewall settings.";
+      }
+    }
+  </script>
+</body>
+
+</html>
