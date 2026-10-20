@@ -82,7 +82,7 @@ This browser is built upon and makes use of the following open-source technologi
 - **Wry (Webview Library)**: Licensed under either the [MIT License](https://github.com/tauri-apps/wry/blob/dev/LICENSE-MIT) or the [Apache License, Version 2.0](https://github.com/tauri-apps/wry/blob/dev/LICENSE-APACHE). [Website](https://github.com/tauri-apps/wry).
 
 ### License
-This project is open-source and is licensed under the same dual-licensing scheme as Tauri and Arti: MIT License / Apache License, Version 2.0.
+This project is open-source and is licensed under the **GNU General Public License v3.0 (GPL-3.0)**. The credits and third-party licenses listed above apply to the dependencies only.
 
 ---
 
@@ -164,4 +164,4 @@ Este navegador está construido sobre las siguientes tecnologías de código abi
 - **Wry (Biblioteca Webview)**: Licencia dual bajo [MIT License](https://github.com/tauri-apps/wry/blob/dev/LICENSE-MIT) o [Apache License, Version 2.0](https://github.com/tauri-apps/wry/blob/dev/LICENSE-APACHE). [Sitio Web](https://github.com/tauri-apps/wry).
 
 ### Licencia
-Este proyecto es de código abierto y está licenciado bajo el mismo esquema dual que Tauri y Arti: Licencia MIT / Licencia Apache, Versión 2.0.
+Este proyecto es de código abierto y está licenciado bajo la **Licencia Pública General GNU v3.0 (GPL-3.0)**. Los créditos y licencias de terceros indicados arriba corresponden solo a las dependencias.
