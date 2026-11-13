@@ -1,167 +1,218 @@
-# <img src="logo.png" width="38" height="38" valign="middle" /> TorLite Browser
+# TorLite Browser
 
-[English Version](#english-version) | [Versión en Español](#versión-en-español)
+[![Tauri](https://img.shields.io/badge/Tauri-v2-24C8DB?logo=tauri&logoColor=white)](https://tauri.app/)
+[![Rust](https://img.shields.io/badge/Rust-Arti-000000?logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Tor](https://img.shields.io/badge/Red-Tor-7D4698?logo=torproject&logoColor=white)](https://www.torproject.org/)
+[![GPL-3.0](https://img.shields.io/badge/Licencia-GPL--3.0-blue)](LICENSE)
+
+[Español](#español) · [English](#english)
 
 ---
 
-# English Version
+## Español
 
-An experimental, lightweight, tabbed web browser built using **Tauri v2** and **Rust**, designed to route web traffic securely through the **Tor network** with a focus on amnesic privacy and multi-profile tab isolation.
+### Índice
 
+- [Descripción](#descripción)
+- [Capturas](#capturas)
+- [Características](#características)
+- [Requisitos](#requisitos)
+- [Instalación](#instalación)
+- [Compilación para distribución](#compilación-para-distribución)
+- [Arquitectura](#arquitectura)
+- [Aviso de seguridad](#aviso-de-seguridad)
+- [Créditos y marcas](#créditos-y-marcas)
+- [Licencia](#licencia)
+
+### Descripción
+
+Navegador web **experimental** con pestañas, ligero, construido con **Tauri v2** y **Rust**. Enruta el tráfico de cada pestaña a través de la **red Tor** usando **Arti**, el cliente Tor oficial escrito en Rust, sin depender del demonio Tor instalado en el sistema.
+
+El enfoque es la **privacidad amnésica**: cada pestaña tiene su propio directorio de datos y este se borra al cerrarla, de modo que no quedan cookies, caché ni historial entre sesiones.
+
+### Capturas
+
+| Interfaz del navegador | Pantalla de arranque de Tor |
+| :---: | :---: |
+| <img src="docs/browser_interface.png" width="400" alt="Interfaz del navegador" /> | <img src="docs/bootstrap_splash.png" width="400" alt="Pantalla de arranque de Tor" /> |
+
+### Características
+
+- **Integración con Tor** mediante Arti, sin instalación externa del demonio.
+- **Proxy SOCKS5 local** que enruta el WebView2 a través de Tor.
+- **Pestañas** con controles unificados: atrás, adelante, recargar y barra de direcciones.
+- **Aislamiento por pestaña**: cada una usa un directorio de datos distinto, sin cookies, caché ni `localStorage` compartidos.
+- **Limpieza amnésica**: el perfil de una pestaña se elimina un segundo después de cerrarla y los perfiles huérfanos se purgan al arrancar.
+- **Intercepción de ventanas nativas**: los enlaces con `_blank` o «Abrir en ventana nueva» se abren como pestaña, no como ventana del sistema.
+- **Indicador onion**: se ilumina en morado al visitar servicios `.onion` y muestra el progreso de arranque de Tor.
+
+### Requisitos
+
+| Requisito | Nota |
+|---|---|
+| **Rust y Cargo** | Estable o nightly ([rustup](https://www.rust-lang.org/tools/install)) |
+| **Node.js y npm** | Para las dependencias del frontend |
+| **WebView2** | Preinstalado en Windows 10/11; si falta, instala el runtime |
+| **Build Tools de C++** | Visual Studio Build Tools con la carga de trabajo C++ |
+
+El proyecto está orientado a **Windows** por el uso de WebView2; Tauri permite otras plataformas, pero esta configuración no las garantiza.
+
+### Instalación
+
+```bash
+git clone https://github.com/alberto2005-coder/TorLite_Browser.git
+cd TorLite_Browser
+npm install
+npm run tauri dev
+```
+
+El modo desarrollo recompila al detectar cambios. El primer arranque de Arti puede tardar unos segundos mientras se establece el circuito Tor.
+
+### Compilación para distribución
+
+```bash
+npm run tauri build
+```
+
+Resultados:
+
+1. **Ejecutable portable**: `src-tauri/target/release/TorLite Browser.exe`.
+2. **Instalador MSI**: `src-tauri/target/release/bundle/msi/TorLite Browser_0.1.0_x64_en-US.msi`.
+
+Ambos son autónomos: quien los reciba no necesita Rust, Node.js ni Tor. En Windows 10/11 WebView2 ya viene instalado; en versiones anteriores el MSI lo descarga.
+
+### Arquitectura
+
+- **`src-tauri/src/lib.rs`**: backend Rust con el bucle del proxy SOCKS5, el arranque de Tor mediante `arti-client`, el ciclo de vida de las webviews, el redimensionado y la intercepción de ventanas nuevas.
+- **`src/bootstrap.html`**: pantalla animada que muestra el estado de conexión con Tor.
+- **`src/index.html`** y **`src/styles.css`**: interfaz glassmorphism, barra de navegación y pestañas.
+- **`src/main.js`**: controlador del frontend: estado de pestañas, renderizado, barra de direcciones e IPC con Tauri.
+- **`src-tauri/tauri.conf.json`**: ventana, permisos y configuración del empaquetado.
+
+### Aviso de seguridad
+
+> [!WARNING]
+> Este navegador es un **experimento**, no una herramienta de anonimato auditada. No lo uses para actividades que dependan de un anonimato fuerte.
+
+- **No hereda las protecciones del Tor Browser**: no incluye *anti-fingerprinting*, aislamiento por sitio de primera parte ni el endurecimiento de `about:config`.
+- **WebView2 no es un motor pensado para privacidad**: puede filtrar características del sistema y del propio WebView.
+- **El borrado de perfiles reduce rastros en disco**, pero no elimina los que deje el sistema operativo, la red o el propio WebView2 durante la sesión.
+- **Sin auditoría independiente**: el código no ha pasado una revisión de seguridad externa.
+- **Cumplimiento**: el uso de Tor puede estar restringido en tu país o en tu red; comprueba la normativa aplicable.
+
+### Créditos y marcas
+
+- **Tauri** — licencia dual MIT / Apache-2.0.
+- **Arti** — cliente Tor del Tor Project, licencia dual MIT / Apache-2.0.
+- **Wry** — licencia dual MIT / Apache-2.0.
+
+*«Tor» y el logotipo «Onion» son marcas registradas de The Tor Project, Inc. Este proyecto es un experimento independiente y no está afiliado ni respaldado por The Tor Project.*
+
+### Licencia
+
+**GNU General Public License v3.0 (GPL-3.0)** — consulta [LICENSE](LICENSE). Las licencias de terceros indicadas arriba se aplican solo a esas dependencias.
+
+---
+
+## English
+
+### Table of contents
+
+- [Overview](#overview)
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Production build](#production-build)
+- [Architecture](#architecture)
+- [Security notice](#security-notice)
+- [Credits and trademarks](#credits-and-trademarks)
+- [License](#license)
+
+### Overview
+
+An **experimental**, lightweight tabbed web browser built with **Tauri v2** and **Rust**. It routes each tab's traffic through the **Tor network** using **Arti**, the official Rust Tor client, without depending on a system-wide Tor daemon.
+
+The focus is **amnesic privacy**: every tab gets its own data directory, which is deleted when the tab closes, so no cookies, cache or history survive between sessions.
 
 ### Screenshots
 
-| Browser Interface | Tor Connection Splash |
+| Browser interface | Tor bootstrap splash |
 | :---: | :---: |
-| <img src="docs/bootstrap_splash.png" width="400px" alt="Browser Interface" /> | <img src="docs/browser_interface.png" width="400px" alt="Tor Connection Splashe" /> |
-
-
-## Table of Contents
-1. [Features](#features)
-2. [Screenshots](#screenshots)
-3. [Prerequisites](#prerequisites)
-4. [Installation & Setup](#installation--setup)
-5. [Building for Production (Distribution)](#building-for-production-distribution)
-6. [Architectural Layout](#architectural-layout)
-7. [Credits, Licenses & Copyrights](#credits-licenses--copyrights)
-8. [License](#license)
+| <img src="docs/browser_interface.png" width="400" alt="Browser interface" /> | <img src="docs/bootstrap_splash.png" width="400" alt="Tor bootstrap splash" /> |
 
 ### Features
-- **Tor Integration**: Uses the official Tor Project's **Arti** client to bootstrap and connect directly to the Tor network.
-- **Local SOCKS5 Proxy**: Spawns an internal SOCKS5 proxy server to route WebView2 traffic through Tor.
-- **Tabbed Interface**: Supports multiple tabs in a single window with unified control, reload, back, forward, and address bars.
-- **Multi-Profile Isolation**: Every tab is assigned its own unique data directory, meaning they do not share cookies, cache, or local storage.
-- **Amnesic Data Cleanup**:
-  - Automatically deletes a tab's profile directory from the disk 1 second after it is closed.
-  - Automatically purges all stale profile directories on application startup, leaving no persistent browsing history, cache, or cookies.
-- **Native Context Interception**: Intercepts native WebView2 new window requests (e.g., right-clicking a link and choosing "Open in new window" or target `_blank` clicks) and opens them as a new tab instead of a separate OS window.
-- **Onion Status Indicator**: Glowing indicator that turns purple when visiting `.onion` hidden services and displays the real-time Tor bootstrap status.
 
+- **Tor integration** through Arti, with no external daemon installation.
+- **Local SOCKS5 proxy** routing WebView2 through Tor.
+- **Tabs** with unified controls: back, forward, reload and address bar.
+- **Per-tab isolation**: each tab uses a separate data directory, with no shared cookies, cache or `localStorage`.
+- **Amnesic cleanup**: a tab's profile is removed one second after it closes, and orphan profiles are purged on start-up.
+- **Native window interception**: `_blank` links and "Open in new window" become tabs instead of OS windows.
+- **Onion indicator**: glows purple on `.onion` services and shows real-time Tor bootstrap progress.
 
+### Requirements
 
-### Prerequisites
-To build and run this project, make sure you have the following installed:
-1. **Rust & Cargo**: [Install Rust](https://www.rust-lang.org/tools/install) (nightly or stable).
-2. **Node.js & npm**: [Install Node.js](https://nodejs.org/).
-3. **Microsoft Edge WebView2**: (Pre-installed on Windows 10/11; otherwise, download the WebView2 Runtime).
-4. **C++ Build Tools**: Required by Tauri on Windows (Visual Studio Build Tools with C++ workload).
+| Requirement | Note |
+|---|---|
+| **Rust and Cargo** | Stable or nightly ([rustup](https://www.rust-lang.org/tools/install)) |
+| **Node.js and npm** | For the frontend dependencies |
+| **WebView2** | Preinstalled on Windows 10/11; install the runtime otherwise |
+| **C++ Build Tools** | Visual Studio Build Tools with the C++ workload |
 
-### Installation & Setup
-1. Clone or copy the project directory.
-2. In the root directory, install the dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the development server (watches files and rebuilds automatically):
-   ```bash
-   npm run tauri dev
-   ```
+The project targets **Windows** because of WebView2; Tauri supports other platforms, but this configuration does not guarantee them.
 
-### Building for Production (Distribution)
-To compile a release version of the browser and package it for distribution, run:
+### Installation
+
+```bash
+git clone https://github.com/alberto2005-coder/TorLite_Browser.git
+cd TorLite_Browser
+npm install
+npm run tauri dev
+```
+
+Dev mode rebuilds on file changes. The first Arti bootstrap can take a few seconds while the Tor circuit is established.
+
+### Production build
+
 ```bash
 npm run tauri build
 ```
-Once the compilation finishes, Tauri will generate:
-1. **Standalone Portable Executable (`.exe`)**: Found in `src-tauri/target/release/TorLite Browser.exe`. This is a single, self-contained file that runs immediately on double-click.
-2. **Installer (`.msi`)**: Found in `src-tauri/target/release/bundle/msi/TorLite Browser_0.1.0_x64_en-US.msi`. 
 
-**Note on self-containment**: The generated `.msi` and `.exe` are completely self-contained. Anyone you send them to can run the app without installing Rust, Node.js, npm, or Tor. On Windows 10/11, the browser engine (WebView2) is pre-installed. For older Windows editions, the MSI installer will automatically download it.
+Outputs:
 
-### Architectural Layout
-- **`src-tauri/src/lib.rs`**: Main Rust backend managing the SOCKS5 proxy server loop, Tor bootstrapping via `arti-client`, child webview lifetime hooks, window event resizes, and native new window interception.
-- **`src/bootstrap.html`**: A clean, animated splash screen that monitors the Tor connection status.
-- **`src/index.html` & `src/styles.css`**: The modern glassmorphism browser layout, navigation controls, and tab bar.
-- **`src/main.js`**: Frontend JS controller coordinating tab states, UI rendering, address bar inputs, and Tauri IPC commands.
+1. **Portable executable**: `src-tauri/target/release/TorLite Browser.exe`.
+2. **MSI installer**: `src-tauri/target/release/bundle/msi/TorLite Browser_0.1.0_x64_en-US.msi`.
 
-### Credits, Licenses & Copyrights
-This browser is built upon and makes use of the following open-source technologies:
-- **Tauri Framework**: Licensed under either the [MIT License](https://github.com/tauri-apps/tauri/blob/dev/LICENSE-MIT) or the [Apache License, Version 2.0](https://github.com/tauri-apps/tauri/blob/dev/LICENSE-APACHE). [Website](https://tauri.app/).
-- **Arti (Tor Client)**: Dual-licensed under the [MIT License](https://gitlab.torproject.org/tpo/core/arti/-/blob/main/LICENSE-MIT) and the [Apache License, Version 2.0](https://gitlab.torproject.org/tpo/core/arti/-/blob/main/LICENSE-APACHE). [Website](https://gitlab.torproject.org/tpo/core/arti).
-- *Disclaimer: "Tor" and the "Onion Logo" are registered trademarks of The Tor Project, Inc. This project is an independent experiment and is not affiliated with or endorsed by The Tor Project.*
-- **Wry (Webview Library)**: Licensed under either the [MIT License](https://github.com/tauri-apps/wry/blob/dev/LICENSE-MIT) or the [Apache License, Version 2.0](https://github.com/tauri-apps/wry/blob/dev/LICENSE-APACHE). [Website](https://github.com/tauri-apps/wry).
+Both are self-contained: recipients need no Rust, Node.js or Tor. Windows 10/11 already ships WebView2; older versions get it downloaded by the MSI.
+
+### Architecture
+
+- **`src-tauri/src/lib.rs`**: Rust backend with the SOCKS5 proxy loop, Tor bootstrap via `arti-client`, webview lifecycle, resizing and new-window interception.
+- **`src/bootstrap.html`**: animated screen showing the Tor connection status.
+- **`src/index.html`** and **`src/styles.css`**: glassmorphism UI, navigation bar and tabs.
+- **`src/main.js`**: frontend controller for tab state, rendering, address bar and Tauri IPC.
+- **`src-tauri/tauri.conf.json`**: window, permissions and bundling configuration.
+
+### Security notice
+
+> [!WARNING]
+> This browser is an **experiment**, not an audited anonymity tool. Do not rely on it for activities that require strong anonymity.
+
+- **It does not inherit Tor Browser's protections**: no anti-fingerprinting, no first-party isolation, no hardened `about:config`.
+- **WebView2 is not a privacy-oriented engine**: it may leak system and WebView characteristics.
+- **Profile wiping reduces on-disk traces**, but does not remove what the OS, the network or WebView2 leaves during the session.
+- **No independent audit**: the code has not undergone external security review.
+- **Compliance**: Tor use may be restricted in your country or network; check the applicable rules.
+
+### Credits and trademarks
+
+- **Tauri** — dual MIT / Apache-2.0 licence.
+- **Arti** — Tor Project's Tor client, dual MIT / Apache-2.0 licence.
+- **Wry** — dual MIT / Apache-2.0 licence.
+
+*"Tor" and the "Onion" logo are registered trademarks of The Tor Project, Inc. This project is an independent experiment and is not affiliated with or endorsed by The Tor Project.*
 
 ### License
-This project is open-source and is licensed under the **GNU General Public License v3.0 (GPL-3.0)**. The credits and third-party licenses listed above apply to the dependencies only.
 
----
-
-# Versión en Español
-
-Un navegador web con pestañas, ligero y experimental construido usando **Tauri v2** y **Rust**, diseñado para enrutar el tráfico web de forma segura a través de la **red Tor** con un enfoque en la privacidad amnésica y el aislamiento de pestañas multi-perfil.
-
-
-### Capturas de Pantalla
-
-| Interfaz del Navegador | Pantalla de Carga de Tor |
-| :---: | :---: |
-| <img src="docs/bootstrap_splash.png" width="400px" alt="Interfaz del Navegador" /> | <img src="docs/browser_interface.png" width="400x" alt="Pantalla de Carga de Tor" /> |
-
-
-## Índice
-1. [Características](#características)
-2. [Capturas de Pantalla](#capturas-de-pantalla)
-3. [Requisitos Previos](#requisitos-previos)
-4. [Instalación y Configuración](#instalación-y-configuración)
-5. [Compilación para Producción (Distribución)](#compilación-para-producción-distribución)
-6. [Estructura del Proyecto](#estructura-del-proyecto)
-7. [Créditos, Licencias y Derechos de Autor](#créditos-licencias-y-derechos-de-autor)
-8. [Licencia](#licencia-1)
-
-### Características
-- **Integración con Tor**: Utiliza el cliente oficial **Arti** de The Tor Project para inicializar y conectarse directamente a la red Tor.
-- **Proxy SOCKS5 Local**: Levanta un servidor proxy SOCKS5 interno para enrutar el tráfico de WebView2 a través de Tor.
-- **Interfaz con Pestañas**: Soporta múltiples pestañas en una sola ventana con controles unificados de navegación, recarga, ir atrás, ir adelante y barra de direcciones.
-- **Aislamiento Multi-Perfil**: A cada pestaña se le asigna su propio directorio de datos exclusivo, lo que significa que no comparten cookies, caché ni almacenamiento local.
-- **Limpieza Amnésica de Datos**:
-  - Elimina automáticamente el directorio de perfil de una pestaña del disco 1 segundo después de que se cierra.
-  - Purga de forma automática todos los perfiles de pestañas antiguos al arrancar la aplicación, garantizando que no persistan historiales de navegación, caché o cookies entre sesiones.
-- **Intercepción de Ventanas Nativas**: Captura las solicitudes de apertura de nuevas ventanas de WebView2 (como al pulsar "Abrir vínculo en una nueva ventana" en el menú contextual o enlaces con `target="_blank"`) y las abre como nuevas pestañas en la misma ventana.
-- **Indicador de Estado Onion**: Distintivo brillante que se ilumina de color morado al visitar servicios ocultos `.onion` y muestra el progreso de conexión de Tor en tiempo real.
-
-
-
-### Requisitos Previos
-Para compilar y ejecutar este proyecto, asegúrate de tener instalado:
-1. **Rust y Cargo**: [Instalar Rust](https://www.rust-lang.org/tools/install) (estable o nightly).
-2. **Node.js y npm**: [Instalar Node.js](https://nodejs.org/).
-3. **Microsoft Edge WebView2**: (Preinstalado en Windows 10/11; de lo contrario, descarga el WebView2 Runtime).
-4. **Herramientas de Compilación de C++**: Requerido por Tauri en Windows (Visual Studio Build Tools con la carga de trabajo de C++).
-
-### Instalación y Configuración
-1. Clona o copia el directorio del proyecto.
-2. En la carpeta raíz, instala las dependencias de Node:
-   ```bash
-   npm install
-   ```
-3. Ejecuta el servidor de desarrollo (compila e inicia la aplicación detectando cambios en tiempo real):
-   ```bash
-   npm run tauri dev
-   ```
-
-### Compilación para Producción (Distribución)
-Para compilar la versión definitiva optimizada del navegador y empaquetarla para su distribución:
-```bash
-npm run tauri build
-```
-Una vez termine la compilación, Tauri generará:
-1. **Ejecutable Portable Independiente (`.exe`)**: Ubicado en `src-tauri/target/release/TorLite Browser.exe`. Es un único archivo ejecutable autónomo listo para usarse con doble clic.
-2. **Instalador (`.msi`)**: Ubicado en `src-tauri/target/release/bundle/msi/TorLite Browser_0.1.0_x64_en-US.msi`.
-
-**Nota sobre la portabilidad**: El instalador `.msi` y el ejecutable `.exe` son completamente autónomos. Cualquier persona a la que se los envíes podrá ejecutar la aplicación directamente sin instalar Rust, Node.js, npm, ni Tor de forma externa. En Windows 10/11, el motor del navegador (WebView2) ya viene preinstalado de fábrica. En versiones anteriores de Windows que carezcan de él, el instalador MSI lo descargará automáticamente.
-
-### Estructura del Proyecto
-- **`src-tauri/src/lib.rs`**: Backend principal en Rust que maneja el bucle del servidor proxy SOCKS5, el arranque de Tor mediante `arti-client`, la gestión de ciclos de vida de webviews secundarios, el redimensionado de ventanas y la intercepción de nuevas ventanas nativas.
-- **`src/bootstrap.html`**: Pantalla de carga animada que muestra el estado de inicialización y conexión a la red Tor.
-- **`src/index.html` y `src/styles.css`**: Estructura de cabeceras en estilo glassmorphism moderno, barra de control, barra de pestañas y estilos CSS generales.
-- **`src/main.js`**: Controlador JavaScript que gestiona el estado de las pestañas, renderizado dinámico de la UI, entradas de URL y llamadas IPC hacia Tauri.
-
-### Créditos, Licencias y Derechos de Autor
-Este navegador está construido sobre las siguientes tecnologías de código abierto:
-- **Tauri Framework**: Licencia dual bajo [MIT License](https://github.com/tauri-apps/tauri/blob/dev/LICENSE-MIT) o [Apache License, Version 2.0](https://github.com/tauri-apps/tauri/blob/dev/LICENSE-APACHE). [Sitio Web](https://tauri.app/).
-- **Arti (Cliente Tor)**: Licencia dual bajo [MIT License](https://gitlab.torproject.org/tpo/core/arti/-/blob/main/LICENSE-MIT) y [Apache License, Version 2.0](https://gitlab.torproject.org/tpo/core/arti/-/blob/main/LICENSE-APACHE). [Sitio Web](https://gitlab.torproject.org/tpo/core/arti).
-- *Aviso legal: "Tor" y el logotipo "Onion" son marcas registradas de The Tor Project, Inc. Este proyecto es un experimento independiente y no está afiliado ni respaldado por The Tor Project.*
-- **Wry (Biblioteca Webview)**: Licencia dual bajo [MIT License](https://github.com/tauri-apps/wry/blob/dev/LICENSE-MIT) o [Apache License, Version 2.0](https://github.com/tauri-apps/wry/blob/dev/LICENSE-APACHE). [Sitio Web](https://github.com/tauri-apps/wry).
-
-### Licencia
-Este proyecto es de código abierto y está licenciado bajo la **Licencia Pública General GNU v3.0 (GPL-3.0)**. Los créditos y licencias de terceros indicados arriba corresponden solo a las dependencias.
+**GNU General Public License v3.0 (GPL-3.0)** — see [LICENSE](LICENSE). The third-party licences above apply only to those dependencies.
